@@ -84,7 +84,7 @@ class terminal			//class to hold details of each client connecting to the server
 		this->id=id;
 	}
 	void update_name(string name){
-		this->name=name;
+		this->name=name;        // points to the object of the class for which the member function is currently executing. 
 	}
 	void update_socket(int socket){
 		this->socket=socket;
