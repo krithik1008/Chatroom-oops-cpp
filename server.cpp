@@ -15,7 +15,7 @@ using namespace std;
 
 string def_col="\033[0m";
 string colors[]={"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m","\033[36m"};
-mutex cout_mtx,clients_mtx;
+mutex cout_mtx,clients_mtx;		//mutual exclusion to avoid some operations of threads interfering with each other
 
 class server							//class to hold data members and functions required by the server
 {
@@ -54,10 +54,10 @@ class server							//class to hold data members and functions required by the se
 			exit(-1);
 		}
 	}
-	// For synchronisation of cout statements
+	// For synchronisation of cout statements so that messages from different clients are not jumbled
 	static void shared_print(string str, bool endLine=true)
 	{	
-		lock_guard<mutex> guard(cout_mtx);
+		lock_guard<mutex> guard(cout_mtx);		//locks cout_mtx mutex in this scope
 		cout<<str;
 		if(endLine)
 				cout<<endl;
@@ -131,8 +131,9 @@ int main()
 			exit(-1);
 		}
 		seed++;		//number of clients in server
-		thread t(handle_client,client_socket,seed);
-		lock_guard<mutex> guard(clients_mtx);
+		thread t(handle_client,client_socket,seed);			//creating a new thread and passing handle_client for the new user
+		lock_guard<mutex> guard(clients_mtx);				//locks clients_mtx mutex in this scope
+		//updating the details of the new client in the object pointer array
 		clients[seed]->update_id(seed);
 		clients[seed]->update_name(string("Anonymous"));
 		clients[seed]->update_socket(client_socket);
@@ -141,6 +142,7 @@ int main()
 
 	for(int i=0; i<NUM_CLIENTS; i++)
 	{
+		//join method allows one thread to wait for the completion of other threads
 		if(clients[i]->th.joinable())
 			clients[i]->th.join();
 	}
@@ -188,7 +190,7 @@ void end_connection(int id)
 	{
 		if(clients[i]->get_id()==id)	
 		{
-			lock_guard<mutex> guard(clients_mtx);
+			lock_guard<mutex> guard(clients_mtx);		//locks clients_mtx mutex in this scope
 			clients[i]->th.detach();	//detach thread of the particular client
 			delete clients[i];			//delete the element of the object pointer array
 			break;
@@ -208,7 +210,7 @@ void handle_client(int client_socket, int id)
 	broadcast_message(welcome_message,id);		//prints welcome message when new client joins
 	server::shared_print(color(id)+welcome_message+def_col);
 	
-	while(1)
+	while(1)						//we use infinite loops as connection must be live untill each client disconnects
 	{
 		//collect received data from the client
 		int bytes_received=recv(client_socket,str,sizeof(str),0);

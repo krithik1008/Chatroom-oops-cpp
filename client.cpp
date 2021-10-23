@@ -13,7 +13,7 @@
 #define NUM_COLORS 6
 using namespace std;
 
-thread t_send, t_recv;
+thread t_send, t_recv;				//sepeate threads for sending and receiving data (for concurrancy) 
 string def_col="\033[0m";
 string colors[]={"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m"};
 
@@ -75,7 +75,7 @@ class client							//class to hold client data members and functions
 		// Send message to all clients via the server
 		static void send_message(int client_socket)
 		{
-			while(1)
+			while(1) //we use infinite loops as sending and receiving must take place untill ctrl+c is pressed
 			{
 				cout<<colors[1]<<"You : "<<def_col;
 				char str[MAX_LEN];
@@ -96,7 +96,7 @@ class client							//class to hold client data members and functions
 		static void recv_message(int client_socket)
 		{
 			char back_space=8;
-			while(1)
+			while(1)	//we use infinite loops as sending and receiving must take place untill ctrl+c is pressed
 			{
 				if(client::modify_exit_flag())	//if exit_flag is set to true, then return
 					return;
@@ -142,12 +142,14 @@ int main()
 	signal(SIGINT, catch_ctrl_c);
 	user->new_user();
 
-	thread t1(client::send_message, client::modify_client_socket());
-	thread t2(client::recv_message, client::modify_client_socket());
+	thread t1(client::send_message, client::modify_client_socket());	//passing send_message function as parameter to a thread
+	thread t2(client::recv_message, client::modify_client_socket());	//passing recv_message function as parameter to a thread
 
+	//assigning the above threads to the globally initialised threads
 	t_send=move(t1);
 	t_recv=move(t2);
 
+	//join method allows one thread to wait for the completion of other threads
 	if(t_send.joinable())
 		t_send.join();
 	if(t_recv.joinable())
