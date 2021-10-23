@@ -63,7 +63,7 @@ class server							//class to hold data members and functions required by the se
 				cout<<endl;
 	}
 };
-int server::server_socket=0;
+int server::server_socket=0;		//used to access the values of the data members of the class server. 
 int seed=0;				//contains the number of clients connected to the server
 
 class terminal			//class to hold details of each client connecting to the server
