@@ -62,11 +62,7 @@ class server							//class to hold data members and functions required by the se
 	}
 	friend const void establish_server(server *s1);	//friend function of class server used to establish connection	
 };
-<<<<<<< HEAD
-int server::server_socket=0;		//used to access the values of the data members of the class server. 
-=======
-int server::server_socket=0;		//used to access the values of the data members of the class server. 
->>>>>>> f3e924cbd238563575fbc90a75fe0d99a2c227e8
+int server::server_socket=0;		//used to access the static data members of the class server. 
 int seed=0;				//contains the number of clients connected to the server
 
 const void establish_server(server *s1)			//friend function to establish connection
