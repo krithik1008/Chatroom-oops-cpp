@@ -1,3 +1,12 @@
+/*
+TITLE: College chat-room application using socket programming and oops concepts
+TEAM MEMBERS:
+Krithik S : 180907164
+Preet Batavia : 180907170
+Kunal Pradhan : 180907278
+Ayush Mittal : 180907182
+Akhil Bonagiri : 180907138
+*/
 #include <bits/stdc++.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -23,36 +32,25 @@ class server							//class to hold data members and functions required by the se
 	struct sockaddr_in socket_address;	//predefined struct containing address information of sockets
 	static int server_socket;			//holds socket descriptor(int) 		
 	public:
-	server()							//constructor to initialize the required server parameters
+	server()							//default constructor to initialize the required server parameters
 	{
 		socket_address.sin_family=AF_INET;			//specifying IP address family (IPv4)
-		socket_address.sin_port=htons(10000);		//assigning port number
+		socket_address.sin_port=htons(10001);		//assigning port number
 		socket_address.sin_addr.s_addr=INADDR_ANY;	//allows binding to any available ip address 
 		bzero(&socket_address.sin_zero,0);			//array buffer, usually set to 0
+	}
+	server(server *ser){				//copy constructor of class serverto create a deep copy of the class
+		server_socket=ser->server_socket;
+		socket_address.sin_family=ser->socket_address.sin_family;
+		socket_address.sin_port=ser->socket_address.sin_port;
+		socket_address.sin_addr.s_addr=ser->socket_address.sin_addr.s_addr;
+		bzero(&ser->socket_address.sin_zero,0);
 	}
 	static void update_server_socket(int val){	//overloaded static function to update server_socket
 		server_socket=val;
 	}
 	static int update_server_socket(){			//overloaded static function to return server_socket value
 		return server_socket;
-	}
-	void establish_server()			
-	{
-		server_socket=(socket(AF_INET,SOCK_STREAM,0));	//creates a IPv4 TCP socket endpoint (SOCK_STREAM->TCP)
-		if(server_socket==-1){
-			perror("socket: ");
-			exit(-1);
-		}
-		//bind attaches a port and ip address to an established socket
-		if((bind(server_socket,(struct sockaddr *)&socket_address,sizeof(struct sockaddr_in)))==-1){
-			perror("bind error: ");
-			exit(-1);
-		}
-		//listen function waits for connection to be established be a client 
-		if((listen(server_socket,8))==-1){	// here 8 clients can be handled in the queue by the server
-			perror("listen error: ");
-			exit(-1);
-		}
 	}
 	// For synchronisation of cout statements so that messages from different clients are not jumbled
 	static void shared_print(string str, bool endLine=true)
@@ -62,21 +60,46 @@ class server							//class to hold data members and functions required by the se
 		if(endLine)
 				cout<<endl;
 	}
+	friend const void establish_server(server *s1);	//friend function of class server used to establish connection	
 };
-int server::server_socket=0;
+int server::server_socket=0;	//initialising static members
 int seed=0;				//contains the number of clients connected to the server
 
+const void establish_server(server *s1)			//friend function to establish connection
+{
+	s1->server_socket=(socket(AF_INET,SOCK_STREAM,0));	//creates a IPv4 TCP socket endpoint (SOCK_STREAM->TCP)
+	if(s1->server_socket==-1){
+		perror("socket: ");
+		exit(-1);
+	}
+	//bind attaches a port and ip address to an established socket
+	if((bind(s1->server_socket,(struct sockaddr *)&s1->socket_address,sizeof(struct sockaddr_in)))==-1){
+		perror("bind error: ");
+		exit(-1);
+	}
+	//listen function waits for connection to be established be a client 
+	if((listen(s1->server_socket,8))==-1){	// here 8 clients can be handled in the queue by the server
+		perror("listen error: ");
+		exit(-1);
+	}
+}
 class terminal			//class to hold details of each client connecting to the server
 {
-	private:
 	int id;				//each client is assigned an id 
-	string name;
+	string name;		//name of the client
 	int socket;			//holds description of client socket
 	public:
+	terminal(){			//default constructor for initialisation
+		id=0;
+		name='\0';
+	}
+	terminal(int id, string name){		//parameterized constructor for assigning specific values
+		this->id=id;
+		this->name=name;
+	}
 	thread th;			//each client operates on a seperate thread for simultaneous chatting
 	//destructor to close the client socket connection 
-	~terminal()	
-	{
+	~terminal()	{
 		close(socket);
 	}
 	//functions to get and update private data members for terminal class
@@ -98,12 +121,17 @@ class terminal			//class to hold details of each client connecting to the server
 	int get_socket(){
 		return socket;
 	}
+	//operator overloading of '==' to assign name to the matching client id
+ 	void operator==(terminal *check_client)				//to set names to each client 
+	{
+		if(check_client->get_id()==id)
+			check_client->update_name(string(name));	
+	}
 };
 
 terminal* clients[NUM_CLIENTS];		//creating an array of terminal object pointers for all new clients
 
 string color(int code);
-void set_name(int id, char name[]);
 int broadcast_message(string message, int sender_id);
 int broadcast_message(int num, int sender_id);
 void end_connection(int id);
@@ -114,8 +142,10 @@ int main()
 	for(int i=0;i<NUM_CLIENTS;i++)
 		clients[i]=new terminal;
 
-	server *new_server=new server;		//creating object opinter of server class
-	new_server->establish_server();		
+	server *new_server=new server;		//creating object pointer of server class
+	establish_server(new_server);		//calling friend function to establish connection 
+
+	server *backup_server=new server(new_server);	//creating a backup server using copy constructor (deep copy)
 
 	struct sockaddr_in client;			//temporary sockaddr_in struct to hold addresses of new clients
 	int client_socket;					//hold socket descriptor of new clients 
@@ -150,14 +180,6 @@ int main()
 	close(server::update_server_socket());		//end server socket connection
 	return 0;
 }
-void set_name(int id, char name[])				//to set names to each client 
-{
-	for(int i=0; i<NUM_CLIENTS; i++)
-	{
-		if(clients[i]->get_id()==id)
-			clients[i]->update_name(string(name));
-	}	
-}
 
 string color(int code){							//choosing colors to display for each client 
 	return colors[code%NUM_COLORS];
@@ -166,7 +188,7 @@ string color(int code){							//choosing colors to display for each client
 int broadcast_message(string message, int sender_id)
 {
 	char temp[MAX_LEN];
-	strcpy(temp,message.c_str());
+	strcpy(temp,message.c_str());		//to convert string to null terminated char array
 	for(int i=0; i<NUM_CLIENTS; i++)
 	{
 		if(clients[i]->get_id()!=sender_id)
@@ -184,7 +206,7 @@ int broadcast_message(int num, int sender_id)
 	}		
 }
 
-void end_connection(int id)
+void end_connection(int id)	//end connection of client based on the specified id
 {
 	for(int i=0; i<NUM_CLIENTS; i++)
 	{
@@ -201,8 +223,11 @@ void end_connection(int id)
 void handle_client(int client_socket, int id)
 {
 	char name[MAX_LEN],str[MAX_LEN];
-	recv(client_socket,name,sizeof(name),0);		//receive name from the client 
-	set_name(id,name);								//set client name 
+	recv(client_socket,name,sizeof(name),0);	//receive name from the client 
+	terminal temp(id,name);			//create a temp terminal class for comparison
+	for(int i=0; i<NUM_CLIENTS; i++){
+			temp==clients[i];					//using overloaded operator to set client name based on id
+	}									
 	// Display welcome message
 	string welcome_message=string(name)+string(" has joined");
 	broadcast_message("#NULL",id);	
@@ -218,7 +243,7 @@ void handle_client(int client_socket, int id)
 			return;
 		if(strcmp(str,"#exit")==0)		//if a client wants to leave the chatroom and send exit message
 		{
-			// Display leaving message
+			//Display leaving message
 			string message=string(name)+string(" has left");		
 			broadcast_message("#NULL",id);			
 			broadcast_message(id,id);						
