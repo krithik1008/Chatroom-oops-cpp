@@ -62,7 +62,11 @@ class server							//class to hold data members and functions required by the se
 	}
 	friend const void establish_server(server *s1);	//friend function of class server used to establish connection	
 };
-int server::server_socket=0;	//initialising static members
+<<<<<<< HEAD
+int server::server_socket=0;		//used to access the values of the data members of the class server. 
+=======
+int server::server_socket=0;		//used to access the values of the data members of the class server. 
+>>>>>>> f3e924cbd238563575fbc90a75fe0d99a2c227e8
 int seed=0;				//contains the number of clients connected to the server
 
 const void establish_server(server *s1)			//friend function to establish connection
@@ -95,7 +99,7 @@ class terminal			//class to hold details of each client connecting to the server
 	}
 	terminal(int id, string name){		//parameterized constructor for assigning specific values
 		this->id=id;
-		this->name=name;
+		this->name=name;        // points to the object of the class for which the member function is currently executing. 
 	}
 	thread th;			//each client operates on a seperate thread for simultaneous chatting
 	//destructor to close the client socket connection 
@@ -107,7 +111,7 @@ class terminal			//class to hold details of each client connecting to the server
 		this->id=id;
 	}
 	void update_name(string name){
-		this->name=name;
+		this->name=name;        // points to the object of the class for which the member function is currently executing. 
 	}
 	void update_socket(int socket){
 		this->socket=socket;
